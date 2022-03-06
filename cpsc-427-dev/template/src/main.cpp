@@ -55,6 +55,9 @@ int main()
 		renderer.draw();
 
 		// TODO A2: you can implement the debug freeze here but other places are possible too.
+        if (debugging.in_debug_mode) {
+            sleep(2);
+        }
 	}
 
 	return EXIT_SUCCESS;

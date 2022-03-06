@@ -163,7 +163,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	if (registry.eatables.components.size() <= MAX_BUG && next_bug_spawn < 0.f) {
 		// !!!  TODO A1: Create new bug with createBug({0,0}), as for the Eagles above
 		next_bug_spawn = (BUG_DELAY_MS / 2) + uniform_dist(rng) * (BUG_DELAY_MS / 2);
-		createBug(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
+		Entity bug = createBug(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
+        auto& motion = registry.motions.get(bug);
+        motion.velocity = {uniform_dist(rng) * 100 - 50, motion.velocity.y};
 	}
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

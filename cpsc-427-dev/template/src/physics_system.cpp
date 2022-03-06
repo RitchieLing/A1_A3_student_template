@@ -9,6 +9,32 @@ vec2 get_bounding_box(const Motion& motion)
 	return { abs(motion.scale.x), abs(motion.scale.y) };
 }
 
+vec2 rotate(vec2 v, float a) {
+	float s = sin(a);
+	float c = cos(a);
+	mat2 m = mat2(c, -s, s, c);
+	return m * v;
+}
+
+std::pair<float, float> player_left_right_most() {
+    auto& player_registry = registry.players;
+    auto& motion_registry = registry.motions;
+    float left_most = window_width_px;
+    float right_most = 0;
+    for(uint i = 0; i < player_registry.size(); i ++) {
+        Entity player = player_registry.entities.at(i);
+        Motion& motion = motion_registry.get(player);
+        Mesh* m = registry.meshPtrs.get(player);
+        for(ColoredVertex& v: m->vertices) {
+            vec2 vert = rotate({v.position.x * motion.scale.x, v.position.y * motion.scale.y}, motion.angle);
+            vec2 p = vert + motion.position;
+            left_most = min(left_most, p.x);
+            right_most = max(right_most, p.x);
+        }
+    }
+    return {left_most, right_most};
+}
+
 // This is a SUPER APPROXIMATE check that puts a circle around the bounding boxes and sees
 // if the center point of either object is inside the other's bounding-box-circle. You can
 // surely implement a more accurate detection
@@ -75,6 +101,35 @@ void PhysicsSystem::step(float elapsed_ms)
 
 	// you may need the following quantities to compute wall positions
 	(float)window_width_px; (float)window_height_px;
+    
+    auto play_lr_pair = player_left_right_most();
+    for(uint i = 0; i< motion_registry.size(); i++) {
+        Entity entity = motion_registry.entities[i];
+        if (registry.players.has(entity)) {
+            Motion& m = motion_registry.components[i];
+            if (play_lr_pair.first <= 0) {
+                m.position.x += (0 - play_lr_pair.first);
+            } else if (play_lr_pair.second >= window_width_px) {
+                m.position.x -= (play_lr_pair.second - window_width_px);
+            }
+        }
+    }
+
+	for(uint i = 0; i< motion_registry.size(); i++) {
+        Motion& motion = motion_container.components[i];
+        Entity entity = motion_registry.entities[i];
+        if (registry.eatables.has(entity)) {
+            const vec2 bonding_box = get_bounding_box(motion);
+            float radius = sqrt(dot(bonding_box/2.f, bonding_box/2.f));
+            if ((motion.position.x - radius) <= 0) {
+                motion.velocity.x = motion.velocity.x * -1.f;
+                motion.position.x = radius;
+            } else if ((motion.position.x + radius) >= window_width_px) {
+                motion.velocity.x = motion.velocity.x * -1.f;
+                motion.position.x = window_width_px - radius;
+            }
+        }
+    }
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A2: DRAW DEBUG INFO HERE on Chicken mesh collision
@@ -98,13 +153,34 @@ void PhysicsSystem::step(float elapsed_ms)
 			// visualize the radius with two axis-aligned lines
 			const vec2 bonding_box = get_bounding_box(motion_i);
 			float radius = sqrt(dot(bonding_box/2.f, bonding_box/2.f));
-			vec2 line_scale1 = { motion_i.scale.x / 10, 2*radius };
-			vec2 line_scale2 = { 2*radius, motion_i.scale.x / 10};
-			vec2 position = motion_i.position;
-			Entity line1 = createLine(motion_i.position, line_scale1);
-			Entity line2 = createLine(motion_i.position, line_scale2);
+			vec2 line_scale1 = { motion_i.scale.x / 15, 2*radius };
+			vec2 line_scale2 = { 2*radius, motion_i.scale.x / 15};
+			// vec2 position = motion_i.position;
+			// Entity line1 = createLine(motion_i.position, line_scale1);
+			// Entity line2 = createLine(motion_i.position, line_scale2);
 
 			// !!! TODO A2: implement debug bounding boxes instead of crosses
+            vec2 position_u = { motion_i.position.x, motion_i.position.y + radius };
+            vec2 position_d = { motion_i.position.x, motion_i.position.y - radius };
+            vec2 position_l = { motion_i.position.x - radius, motion_i.position.y };
+            vec2 position_r = { motion_i.position.x + radius, motion_i.position.y };
+            createLine(position_u, line_scale2);
+            createLine(position_d, line_scale2);
+            createLine(position_l, line_scale1);
+            createLine(position_r, line_scale1);
+
+            // draw chicken mesh
+            auto& player_registry = registry.players;
+            for(uint i = 0; i < player_registry.size(); i ++) {
+                Entity player = player_registry.entities.at(i);
+                Motion& motion = motion_registry.get(player);
+                Mesh* m = registry.meshPtrs.get(player);
+                vec2 point = {motion.scale.x/15,motion.scale.x/15};
+                for(ColoredVertex& v: m->vertices) {
+                    vec2 p {v.position.x * motion.scale.x, v.position.y * motion.scale.y};
+                    createLine(rotate(p, motion.angle) + motion.position, point);
+                }
+            }
 		}
 	}
 
