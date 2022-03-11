@@ -4,6 +4,13 @@
 #include <unordered_map>
 #include "../ext/stb_image/stb_image.h"
 
+struct Mode {
+    bool advanced = 0;
+    bool committed = 0;
+};
+
+extern Mode mode;
+
 // Player component
 struct Player
 {

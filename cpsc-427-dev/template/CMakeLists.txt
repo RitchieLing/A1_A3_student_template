@@ -87,8 +87,8 @@ if (IS_OS_LINUX OR IS_OS_MAC)
 
     pkg_search_module(GLFW REQUIRED glfw3)
 
-    pkg_search_module(SDL2 REQUIRED sdl)
-    pkg_search_module(SDL2MIXER REQUIRED SDL_mixer)
+    pkg_search_module(SDL2 REQUIRED sdl2)
+    pkg_search_module(SDL2MIXER REQUIRED SDL2_mixer)
 
     # Link Frameworks on OSX
     if (IS_OS_MAC)

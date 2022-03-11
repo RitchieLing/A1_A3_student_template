@@ -151,12 +151,16 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 
 	// Spawning new eagles
 	next_eagle_spawn -= elapsed_ms_since_last_update * current_speed;
-	if (registry.deadlys.components.size() <= MAX_EAGLES && next_eagle_spawn < 0.f) {
-		// Reset timer
-		next_eagle_spawn = (EAGLE_DELAY_MS / 2) + uniform_dist(rng) * (EAGLE_DELAY_MS / 2);
-		// Create eagle with random initial position
-        createEagle(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
-	}
+    if (mode.committed) {
+        
+    } else {
+        if (registry.deadlys.components.size() <= MAX_EAGLES && next_eagle_spawn < 0.f) {
+            // Reset timer
+            next_eagle_spawn = (EAGLE_DELAY_MS / 2) + uniform_dist(rng) * (EAGLE_DELAY_MS / 2);
+            // Create eagle with random initial position
+            createEagle(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
+	    }
+    }
 
 	// Spawning new bug
 	next_bug_spawn -= elapsed_ms_since_last_update * current_speed;
@@ -165,7 +169,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		next_bug_spawn = (BUG_DELAY_MS / 2) + uniform_dist(rng) * (BUG_DELAY_MS / 2);
 		Entity bug = createBug(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
         auto& motion = registry.motions.get(bug);
-        motion.velocity = {uniform_dist(rng) * 100 - 50, motion.velocity.y};
+        motion.velocity = {uniform_dist(rng) * 500 -250 , motion.velocity.y};
 	}
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -232,6 +236,10 @@ void WorldSystem::restart_game() {
 	// Create a new chicken
 	player_chicken = createChicken(renderer, { window_width_px/2, window_height_px - 200 });
 	registry.colors.insert(player_chicken, {1, 0.8f, 0.8f});
+    mode.committed = mode.advanced;
+    if (mode.committed) {
+        createEagle(renderer, vec2(50.f + uniform_dist(rng) * (window_width_px - 100.f), 100.f));
+    }
 
 	// !! TODO A3: Enable static eggs on the ground
 	// Create eggs on the floor for reference
@@ -370,7 +378,17 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 
 		
 		
-	
+	if (key == GLFW_KEY_A) {
+        if (action == GLFW_RELEASE) {
+            mode.advanced = true;
+        }
+    }
+
+    if (key == GLFW_KEY_B) {
+        if (action == GLFW_RELEASE) {
+            mode.advanced = false;
+        }
+    }
 
 	
 	// Resetting game

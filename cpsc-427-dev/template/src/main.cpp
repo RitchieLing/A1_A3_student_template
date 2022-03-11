@@ -4,6 +4,7 @@
 
 // stlib
 #include <chrono>
+#include <thread>
 
 // internal
 #include "ai_system.hpp"
@@ -11,6 +12,7 @@
 #include "render_system.hpp"
 #include "world_system.hpp"
 
+using namespace std::chrono_literals;
 using Clock = std::chrono::high_resolution_clock;
 
 // Entry point
@@ -56,7 +58,7 @@ int main()
 
 		// TODO A2: you can implement the debug freeze here but other places are possible too.
         if (debugging.in_debug_mode) {
-            sleep(2);
+            std::this_thread::sleep_for(2000ms);
         }
 	}
 

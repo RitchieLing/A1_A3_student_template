@@ -23,9 +23,30 @@ void AISystem::step(float elapsed_ms)
         vec2 dp = player_motion.position - bug_motion.position;
         float dist_squared = dot(dp,dp);
         if (dist_squared < safe_distance * safe_distance) {
-            bug_motion.velocity = {bug_motion.position.x < player_motion.position.x ? -50 : 50, 0};
+            bug_motion.velocity = {bug_motion.position.x < player_motion.position.x ? -100 : 100, 0};
         } else {
-            bug_motion.velocity = { 0, 50 };
+            bug_motion.velocity.y = 50;
+        }
+    }
+    if (mode.committed) {
+        for(int i = 0; i < registry.deadlys.components.size(); i ++) {
+            Entity eagle = registry.deadlys.entities[i];
+            Motion& eagle_motion = motion_registry.get(eagle);
+            vec2 dp = player_motion.position - eagle_motion.position;
+            float norm = sqrt(dot(dp, dp));
+            dp = {dp.x / norm, dp.y / norm};
+            eagle_motion.velocity = {dp.x * 100, dp.y * 100};
+            for(int i = 0; i < registry.eatables.components.size(); i ++) {
+                Entity bug = registry.eatables.entities[i];
+                Motion& bug_motion = motion_registry.get(bug);        
+                vec2 eb_dp = eagle_motion.position - bug_motion.position;
+                float dist_squared = dot(eb_dp,eb_dp);
+                if (dist_squared < safe_distance * safe_distance) {
+                    eagle_motion.velocity = {eagle_motion.position.x < bug_motion.position.x ? -50 : 50, dp.y * 100};
+                } else {
+                    eagle_motion.velocity = {dp.x * 100, dp.y * 100};
+                }
+            }
         }
     }
 
