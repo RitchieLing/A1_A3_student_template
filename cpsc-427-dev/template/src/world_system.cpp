@@ -13,13 +13,15 @@ const size_t MAX_EAGLES = 15;
 const size_t MAX_BUG = 5;
 const size_t EAGLE_DELAY_MS = 2000 * 3;
 const size_t BUG_DELAY_MS = 5000 * 3;
-
+const size_t EGG_DELAY_MS = 500; 
+const float shoot_volocity = 100.f;
 
 // Create the bug world
 WorldSystem::WorldSystem()
 	: points(0)
 	, next_eagle_spawn(0.f)
-	, next_bug_spawn(0.f) {
+	, next_bug_spawn(0.f) 
+	, next_egg_spawn(0.f) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 }
@@ -124,6 +126,11 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
     restart_game();
 }
 
+bool compareEntity(Entity i, Entity j)
+{
+	return registry.renderRequests.get(j).depth < registry.renderRequests.get(i).depth;
+}
+
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Updating window title with points
@@ -176,7 +183,22 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// TODO A3: HANDLE EGG SPAWN HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 3
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+	//Spawning new egg
+	
+	//
+	next_egg_spawn -= elapsed_ms_since_last_update * current_speed;
+	if (next_egg_spawn < 0.f) {
+		next_egg_spawn = (EGG_DELAY_MS / 2) + uniform_dist(rng) * (EGG_DELAY_MS / 2);
+		Motion player_motion = registry.motions.get(player_chicken);
+		Entity egg = createEgg(player_motion.position, vec2(15, 15));
+		auto& motion = registry.motions.get(egg);
+		motion.angle = (((rand() % 45) - 22.5f) * M_PI / 180.0) - player_motion.angle;
+		motion.position += vec2(cos(motion.angle), sin(motion.angle)) * 20.f;
+		motion.velocity = vec2(cos(motion.angle)* shoot_volocity, sin(motion.angle* shoot_volocity));
+		float scale = 20.0f + float(rand() % 5);
+		motion.scale = vec2(scale);
+		registry.physicals.get(egg).mass = scale * 0.2f;
+	}
 	// Processing the chicken state
 	assert(registry.screenStates.components.size() <= 1);
     ScreenState &screen = registry.screenStates.components[0];
@@ -212,6 +234,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			return true;
 		}
 	}
+
+	registry.renderRequests.sort(compareEntity);
 	return true;
 	
 }
@@ -243,7 +267,7 @@ void WorldSystem::restart_game() {
 
 	// !! TODO A3: Enable static eggs on the ground
 	// Create eggs on the floor for reference
-	/*
+
 	for (uint i = 0; i < 20; i++) {
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
@@ -253,7 +277,8 @@ void WorldSystem::restart_game() {
 		float brightness = uniform_dist(rng) * 0.5 + 0.5;
 		registry.colors.insert(egg, { brightness, brightness, brightness});
 	}
-	*/
+	
+	
 }
 
 // Compute collisions between entities

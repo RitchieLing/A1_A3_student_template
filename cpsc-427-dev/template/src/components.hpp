@@ -97,6 +97,18 @@ struct LightUp {
 	float timer_ms = 1000;
 };
 
+struct Shoot
+{
+
+};
+
+// Objects affected by gravity, can bounce
+struct Physical
+{
+	float gravity = 0.0f;
+	float mass = 20.0;      // mass
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -152,5 +164,6 @@ struct RenderRequest {
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
 	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
+	int depth;
 };
 

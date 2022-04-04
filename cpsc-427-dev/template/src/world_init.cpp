@@ -21,9 +21,13 @@ Entity createChicken(RenderSystem* renderer, vec2 pos)
 	registry.players.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
+		{
+			TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
 			EFFECT_ASSET_ID::CHICKEN,
-			GEOMETRY_BUFFER_ID::CHICKEN });
+			GEOMETRY_BUFFER_ID::CHICKEN,
+			0
+		}
+	);
 
 	return entity;
 }
@@ -50,9 +54,13 @@ Entity createBug(RenderSystem* renderer, vec2 position)
 	registry.eatables.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::BUG,
+		{
+			TEXTURE_ASSET_ID::BUG,
 			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE });
+			GEOMETRY_BUFFER_ID::SPRITE,
+			2 
+		}
+	);
 
 	return entity;
 }
@@ -78,12 +86,25 @@ Entity createEagle(RenderSystem* renderer, vec2 position)
 	registry.deadlys.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::EAGLE,
-		 EFFECT_ASSET_ID::TEXTURED,
-		 GEOMETRY_BUFFER_ID::SPRITE });
+		{
+			TEXTURE_ASSET_ID::EAGLE,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+			1
+		}
+	);
+
+	// physical
+	registry.physicals.insert(entity,
+		{
+			0.0f,   
+			100.0f, 
+		}
+	);
 
 	return entity;
 }
+
 
 Entity createLine(vec2 position, vec2 scale)
 {
@@ -107,7 +128,7 @@ Entity createLine(vec2 position, vec2 scale)
 	return entity;
 }
 
-Entity createEgg(vec2 pos, vec2 size)
+Entity createEgg(vec2 pos, vec2 scale)
 {
 	auto entity = Entity();
 
@@ -116,15 +137,16 @@ Entity createEgg(vec2 pos, vec2 size)
 	motion.position = pos;
 	motion.angle = 0.f;
 	motion.velocity = { 0.f, 0.f };
-	motion.scale = size;
-
-	// Create and (empty) Chicken component to be able to refer to all eagles
-	registry.deadlys.emplace(entity);
+	motion.scale = scale;
+	registry.physicals.insert(entity,
+		{1.0f,       
+		10.0f});
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, 
 			EFFECT_ASSET_ID::EGG,
-			GEOMETRY_BUFFER_ID::EGG });
-
+			GEOMETRY_BUFFER_ID::EGG,
+			4});
+	registry.shoots.emplace(entity);
 	return entity;
 }

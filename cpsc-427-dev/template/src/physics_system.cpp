@@ -33,6 +33,7 @@ std::pair<float, float> player_left_right_most() {
     return {left_most, right_most};
 }
 
+
 // This is a SUPER APPROXIMATE check that puts a circle around the bounding boxes and sees
 // if the center point of either object is inside the other's bounding-box-circle. You can
 // surely implement a more accurate detection
@@ -54,16 +55,21 @@ void PhysicsSystem::step(float elapsed_ms)
 {
 	// Move bug based on how much time has passed, this is to (partially) avoid
 	// having entities move at different speed based on the machine.
+    float delta_t = elapsed_ms * 0.001f;
 	auto& motion_registry = registry.motions;
-	for(uint i = 0; i< motion_registry.size(); i++)
-	{	
-		// !!! TODO A1: update motion.position based on step_seconds and motion.velocity
-		Motion& player_motion = motion_registry.components[i];
-		Entity entity = motion_registry.entities[i];
-		vec2 trans_vector = vec2(elapsed_ms / 1000.f , elapsed_ms / 1000.f);
-		player_motion.position = player_motion.position + player_motion.velocity * trans_vector;
-		(void)elapsed_ms; // placeholder to silence unused warning until implemented
-	}
+    for (uint i = 0; i < motion_registry.size(); i++)
+    {
+        // !!! TODO A1: update motion.position based on step_seconds and motion.velocity
+        Motion& motion = motion_registry.components[i];
+        Entity entity = motion_registry.entities[i];
+        motion.position = motion.position + motion.velocity * delta_t;
+
+        // make gravity working
+        if (registry.shoots.has(entity)) {
+            motion.velocity.y += 98 * delta_t;
+        }
+        (void)elapsed_ms; // placeholder to silence unused warning until implemented
+    }
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A3: HANDLE EGG UPDATES HERE
@@ -71,26 +77,39 @@ void PhysicsSystem::step(float elapsed_ms)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	// Check for collisions between all moving entities
-    ComponentContainer<Motion> &motion_container = registry.motions;
-	for(uint i = 0; i<motion_container.components.size(); i++)
-	{
-		Motion& motion_i = motion_container.components[i];
-		Entity entity_i = motion_container.entities[i];
-		
-		// note starting j at i+1 to compare all (i,j) pairs only once (and to not compare with itself)
-		for(uint j = i+1; j<motion_container.components.size(); j++)
-		{
-			Motion& motion_j = motion_container.components[j];
-			if (collides(motion_i, motion_j))
-			{
-				Entity entity_j = motion_container.entities[j];
-				// Create a collisions event
-				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
-				registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-				registry.collisions.emplace_with_duplicates(entity_j, entity_i);
-			}
-		}
-	}
+    ComponentContainer<Motion>& motion_container = registry.motions;
+    for (uint i = 0; i < motion_container.components.size(); i++) {
+        Motion& motion_i = motion_container.components[i];
+        Entity entity_i = motion_container.entities[i];
+
+        // note starting j at i+1 to compare all (i,j) pairs only once (and to not compare with itself)
+        for (uint j = i + 1; j < motion_container.components.size(); j++) {
+            Motion& motion_j = motion_container.components[j];
+            Entity entity_j = motion_container.entities[j];
+
+            if (collides(motion_i, motion_j)) {
+                // Create a collisions event
+                // We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
+                registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+
+                // bounce
+                if (registry.physicals.has(entity_i) && registry.physicals.has(entity_j)) {
+                    // Create a collisions event
+                    // We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
+                    Physical phy_i = registry.physicals.get(entity_i);
+                    Physical phy_j = registry.physicals.get(entity_j);
+                    float m_i = phy_i.mass;
+                    vec2 v_i = motion_i.velocity;
+                    float m_j = phy_j.mass;
+                    vec2 v_j = motion_j.velocity;
+                    //Law of conservation of momentum
+                    motion_i.velocity = ((m_i - m_j) * v_i + 2 * m_j * v_j) / (m_i + m_j);
+                    motion_j.velocity = ((m_j - m_i) * v_j + 2 * m_i * v_i) / (m_i + m_j);
+                }
+            }
+        }
+    }
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A2: HANDLE CHICKEN - WALL collisions HERE
@@ -127,6 +146,25 @@ void PhysicsSystem::step(float elapsed_ms)
                 motion.position.x = window_width_px - radius;
             }
         }
+    }
+
+    //eggs wall collision
+    for (size_t i = 0; i < motion_container.entities.size(); ++i) {
+        Motion& motion = motion_container.components[i];
+        Entity entity = motion_container.entities[i];
+        if (registry.shoots.has(entity)) {
+            const vec2 bonding_box = get_bounding_box(motion);
+            float radius = sqrt(dot(bonding_box / 2.f, bonding_box / 2.f));
+            if ((motion.position.x - radius) <= 0) {
+                motion.velocity.x = motion.velocity.x * -1.f;
+                motion.position.x = radius;
+            }
+            else if ((motion.position.x + radius) >= window_width_px) {
+                motion.velocity.x = motion.velocity.x * -1.f;
+                motion.position.x = window_width_px - radius;
+            }
+        }
+
     }
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -186,4 +224,5 @@ void PhysicsSystem::step(float elapsed_ms)
 	// TODO A3: HANDLE EGG collisions HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 3
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // Impliment that in above, don't really know how to handle bouonce only for eggs,it's weird in logic for me
 }
